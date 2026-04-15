@@ -1,0 +1,128 @@
+//@version=6
+indicator("Intraday Momentum - Cameron/Aziz", overlay=true, max_bars_back=500)
+
+// ─── INPUTS ───────────────────────────────────────────────────────────────────
+ema9_len  = input.int(9,    "EMA 9",         group="EMAs")
+ema20_len = input.int(20,   "EMA 20",        group="EMAs")
+bb_len    = input.int(20,   "BB Length",     group="Bollinger Bands")
+bb_mult   = input.float(2.0,"BB StdDev",     group="Bollinger Bands")
+rsi_len   = input.int(14,   "RSI Length",    group="Filters")
+vol_len   = input.int(20,   "Volume MA Len", group="Filters")
+
+// Session filter: 9:35-11:30 AM ET only
+session_active = not na(time("5", "0935-1130:23456"))
+
+// ─── CALCULATIONS ─────────────────────────────────────────────────────────────
+ema9  = ta.ema(close, ema9_len)
+ema20 = ta.ema(close, ema20_len)
+[bb_upper, bb_mid, bb_lower] = ta.bb(close, bb_len, bb_mult)
+rsi     = ta.rsi(close, rsi_len)
+avg_vol = ta.sma(volume, vol_len)
+rel_vol = volume / avg_vol
+vwap_val = ta.vwap(hlc3)
+
+// ─── MULTI-TIMEFRAME BIAS (EMA 9 vs EMA 20) ───────────────────────────────────
+ema9_1h  = request.security(syminfo.tickerid, "60",  ta.ema(close, ema9_len),  lookahead=barmerge.lookahead_off)
+ema20_1h = request.security(syminfo.tickerid, "60",  ta.ema(close, ema20_len), lookahead=barmerge.lookahead_off)
+ema9_4h  = request.security(syminfo.tickerid, "240", ta.ema(close, ema9_len),  lookahead=barmerge.lookahead_off)
+ema20_4h = request.security(syminfo.tickerid, "240", ta.ema(close, ema20_len), lookahead=barmerge.lookahead_off)
+ema9_1d  = request.security(syminfo.tickerid, "D",   ta.ema(close, ema9_len),  lookahead=barmerge.lookahead_off)
+ema20_1d = request.security(syminfo.tickerid, "D",   ta.ema(close, ema20_len), lookahead=barmerge.lookahead_off)
+
+mtf_bull_1h = ema9_1h > ema20_1h
+mtf_bull_4h = ema9_4h > ema20_4h
+mtf_bull_1d = ema9_1d > ema20_1d
+
+// Opening range (first 5-min candle of session)
+var float or_high = na
+var float or_low  = na
+if session.isfirstbar
+    or_high := high
+    or_low  := low
+
+// ─── BIAS ─────────────────────────────────────────────────────────────────────
+above_vwap   = close > vwap_val
+below_vwap   = close < vwap_val
+ema_bull     = ema9 > ema20
+ema_bear     = ema9 < ema20
+high_vol     = rel_vol >= 1.5
+ema_cross_up = ta.crossover(ema9, ema20)
+ema_cross_dn = ta.crossunder(ema9, ema20)
+
+// ─── LONG TRIGGERS ────────────────────────────────────────────────────────────
+vwap_bounce  = low <= vwap_val * 1.002 and close > vwap_val and above_vwap[1]
+ema_cross_l  = ema_cross_up and above_vwap
+or_breakout  = not na(or_high) and close > or_high and above_vwap
+long_trigger = vwap_bounce or ema_cross_l or or_breakout
+long_sig     = session_active and above_vwap and ema_bull and high_vol and long_trigger
+
+// ─── SHORT TRIGGERS ───────────────────────────────────────────────────────────
+vwap_reject   = high >= vwap_val * 0.998 and close < vwap_val and below_vwap[1]
+ema_cross_s   = ema_cross_dn and below_vwap
+or_breakdown  = not na(or_low) and close < or_low and below_vwap
+short_trigger = vwap_reject or ema_cross_s or or_breakdown
+short_sig     = session_active and below_vwap and ema_bear and high_vol and short_trigger
+
+// ─── OVEREXTENDED REVERSALS (Aziz) ────────────────────────────────────────────
+xshort = rsi >= 85 and close >= bb_upper and session_active
+xlong  = rsi <= 15 and close <= bb_lower and session_active
+
+// ─── PLOTS ────────────────────────────────────────────────────────────────────
+plot(ema9,     "EMA 9",  color=color.new(color.yellow, 0), linewidth=1)
+plot(ema20,    "EMA 20", color=color.new(color.orange, 0), linewidth=2)
+plot(vwap_val, "VWAP",   color=color.new(color.purple, 0), linewidth=2, style=plot.style_stepline)
+p_bb_u = plot(bb_upper, "BB Upper", color=color.new(color.gray, 70))
+p_bb_l = plot(bb_lower, "BB Lower", color=color.new(color.gray, 70))
+fill(p_bb_u, p_bb_l, color=color.new(color.gray, 93))
+plot(or_high, "OR High", color=color.new(color.lime, 50), linewidth=1, style=plot.style_circles)
+plot(or_low,  "OR Low",  color=color.new(color.red,  50), linewidth=1, style=plot.style_circles)
+bgcolor(session_active ? color.new(color.blue, 97) : na, title="Trade Window")
+
+// ─── SIGNALS ──────────────────────────────────────────────────────────────────
+plotshape(long_sig,  title="Long",   style=shape.labelup,   location=location.belowbar, color=color.new(color.green,   0), text="LONG",   textcolor=color.white, size=size.small)
+plotshape(short_sig, title="Short",  style=shape.labeldown, location=location.abovebar, color=color.new(color.red,     0), text="SHORT",  textcolor=color.white, size=size.small)
+plotshape(xshort,    title="XShort", style=shape.labeldown, location=location.abovebar, color=color.new(color.fuchsia, 0), text="XSHORT", textcolor=color.white, size=size.tiny)
+plotshape(xlong,     title="XLong",  style=shape.labelup,   location=location.belowbar, color=color.new(color.aqua,    0), text="XLONG",  textcolor=color.white, size=size.tiny)
+
+// ─── ALERTS ───────────────────────────────────────────────────────────────────
+alertcondition(long_sig,  title="Long",   message="LONG signal: VWAP/EMA setup confirmed")
+alertcondition(short_sig, title="Short",  message="SHORT signal: VWAP/EMA setup confirmed")
+alertcondition(xshort,    title="XShort", message="OVEREXTENDED SHORT: RSI 85+ at upper BB")
+alertcondition(xlong,     title="XLong",  message="OVEREXTENDED LONG: RSI 15- at lower BB")
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
+var table dash = table.new(position.top_right, 2, 12, border_width=1, bgcolor=color.new(color.black, 60))
+if barstate.islast
+    hdr = color.new(color.gray,   20)
+    g   = color.new(color.green,  40)
+    r   = color.new(color.red,    40)
+    neu = color.new(color.gray,   60)
+    ora = color.new(color.orange, 40)
+    w   = color.white
+    table.cell(dash, 0, 0, "Condition",   bgcolor=hdr, text_color=w, text_size=size.small)
+    table.cell(dash, 1, 0, "Status",      bgcolor=hdr, text_color=w, text_size=size.small)
+    table.cell(dash, 0, 1, "Session",     text_size=size.small, text_color=w)
+    table.cell(dash, 1, 1, session_active ? "OPEN" : "CLOSED", bgcolor=session_active ? g : neu, text_color=w, text_size=size.small)
+    table.cell(dash, 0, 2, "VWAP Bias",  text_size=size.small, text_color=w)
+    table.cell(dash, 1, 2, above_vwap ? "Above" : "Below", bgcolor=above_vwap ? g : r, text_color=w, text_size=size.small)
+    table.cell(dash, 0, 3, "EMA 9/20",   text_size=size.small, text_color=w)
+    table.cell(dash, 1, 3, ema_bull ? "Bull" : "Bear", bgcolor=ema_bull ? g : r, text_color=w, text_size=size.small)
+    table.cell(dash, 0, 4, "Rel Volume", text_size=size.small, text_color=w)
+    table.cell(dash, 1, 4, str.tostring(math.round(rel_vol, 1)) + "x", bgcolor=high_vol ? g : r, text_color=w, text_size=size.small)
+    table.cell(dash, 0, 5, "RSI",        text_size=size.small, text_color=w)
+    table.cell(dash, 1, 5, str.tostring(math.round(rsi, 1)), bgcolor=rsi >= 85 ? r : rsi <= 15 ? g : neu, text_color=w, text_size=size.small)
+    table.cell(dash, 0, 6, "OR High",    text_size=size.small, text_color=w)
+    table.cell(dash, 1, 6, na(or_high) ? "--" : str.tostring(math.round(or_high, 2)), bgcolor=neu, text_color=w, text_size=size.small)
+    table.cell(dash, 0, 7, "OR Low",     text_size=size.small, text_color=w)
+    table.cell(dash, 1, 7, na(or_low) ? "--" : str.tostring(math.round(or_low, 2)), bgcolor=neu, text_color=w, text_size=size.small)
+    table.cell(dash, 0, 8, "Setup",      text_size=size.small, text_color=w)
+    setup_txt = long_sig ? "LONG" : short_sig ? "SHORT" : xshort ? "XSHORT" : xlong ? "XLONG" : "WAIT"
+    setup_clr = long_sig ? g : short_sig ? r : (xshort or xlong) ? ora : neu
+    table.cell(dash, 1, 8, setup_txt, bgcolor=setup_clr, text_color=w, text_size=size.small)
+    // MTF Bias rows
+    table.cell(dash, 0, 9,  "1H Bias",  text_size=size.small, text_color=w)
+    table.cell(dash, 1, 9,  mtf_bull_1h ? "Bullish" : "Bearish", bgcolor=mtf_bull_1h ? g : r, text_color=w, text_size=size.small)
+    table.cell(dash, 0, 10, "4H Bias",  text_size=size.small, text_color=w)
+    table.cell(dash, 1, 10, mtf_bull_4h ? "Bullish" : "Bearish", bgcolor=mtf_bull_4h ? g : r, text_color=w, text_size=size.small)
+    table.cell(dash, 0, 11, "1D Bias",  text_size=size.small, text_color=w)
+    table.cell(dash, 1, 11, mtf_bull_1d ? "Bullish" : "Bearish", bgcolor=mtf_bull_1d ? g : r, text_color=w, text_size=size.small)
