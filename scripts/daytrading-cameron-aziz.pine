@@ -295,6 +295,10 @@ short_sig     = session_active and below_vwap and ema_bear and high_vol and shor
 xshort = rsi >= 85 and close >= bb_upper and session_active
 xlong  = rsi <= 15 and close <= bb_lower and session_active
 
+// ─── 150% VWAP EXHAUSTION BELOW VWAP ─────────────────────────────────────────
+// Candle range >= 1.5% of VWAP while closing below VWAP = exhaustion / mean-reversion setup
+vwap_exhaust_dn = (high - low) / vwap_val >= 0.015 and close < vwap_val and session_active
+
 // ─── PLOTS ────────────────────────────────────────────────────────────────────
 plot(ema9,     "EMA 9",  color=color.new(color.yellow, 0), linewidth=1)
 plot(ema20,    "EMA 20", color=color.new(color.orange, 0), linewidth=2)
@@ -307,16 +311,18 @@ plot(or_low,  "OR Low",  color=color.new(color.red,  50), linewidth=1, style=plo
 bgcolor(session_active ? color.new(color.blue, 97) : na, title="Trade Window")
 
 // ─── SIGNALS ──────────────────────────────────────────────────────────────────
-plotshape(long_sig,  title="Long",   style=shape.labelup,   location=location.belowbar, color=color.new(color.green,   0), text="LONG",   textcolor=color.white, size=size.small)
-plotshape(short_sig, title="Short",  style=shape.labeldown, location=location.abovebar, color=color.new(color.red,     0), text="SHORT",  textcolor=color.white, size=size.small)
-plotshape(xshort,    title="XShort", style=shape.labeldown, location=location.abovebar, color=color.new(color.fuchsia, 0), text="XSHORT", textcolor=color.white, size=size.tiny)
-plotshape(xlong,     title="XLong",  style=shape.labelup,   location=location.belowbar, color=color.new(color.aqua,    0), text="XLONG",  textcolor=color.white, size=size.tiny)
+plotshape(long_sig,        title="Long",        style=shape.labelup,   location=location.belowbar, color=color.new(color.green,   0), text="LONG",     textcolor=color.white, size=size.small)
+plotshape(short_sig,       title="Short",       style=shape.labeldown, location=location.abovebar, color=color.new(color.red,     0), text="SHORT",    textcolor=color.white, size=size.small)
+plotshape(xshort,          title="XShort",      style=shape.labeldown, location=location.abovebar, color=color.new(color.fuchsia, 0), text="XSHORT",   textcolor=color.white, size=size.tiny)
+plotshape(xlong,           title="XLong",       style=shape.labelup,   location=location.belowbar, color=color.new(color.aqua,    0), text="XLONG",    textcolor=color.white, size=size.tiny)
+plotshape(vwap_exhaust_dn, title="VWAP Exhaust DN", style=shape.labelup, location=location.belowbar, color=color.new(color.orange, 0), text="VWAP-EX↑", textcolor=color.white, size=size.tiny)
 
 // ─── ALERTS ───────────────────────────────────────────────────────────────────
-alertcondition(long_sig,  title="Long",   message="LONG signal: VWAP/EMA setup confirmed")
-alertcondition(short_sig, title="Short",  message="SHORT signal: VWAP/EMA setup confirmed")
-alertcondition(xshort,    title="XShort", message="OVEREXTENDED SHORT: RSI 85+ at upper BB")
-alertcondition(xlong,     title="XLong",  message="OVEREXTENDED LONG: RSI 15- at lower BB")
+alertcondition(long_sig,        title="Long",           message="LONG signal: VWAP/EMA setup confirmed")
+alertcondition(short_sig,       title="Short",          message="SHORT signal: VWAP/EMA setup confirmed")
+alertcondition(xshort,          title="XShort",         message="OVEREXTENDED SHORT: RSI 85+ at upper BB")
+alertcondition(xlong,           title="XLong",          message="OVEREXTENDED LONG: RSI 15- at lower BB")
+alertcondition(vwap_exhaust_dn, title="VWAP Exhaust DN", message="150% VWAP exhaustion below VWAP — mean reversion likely")
 
 // ─── MAIN DASHBOARD (top-right) ───────────────────────────────────────────────
 var table dash = table.new(position.top_right, 2, 14, border_width=1, bgcolor=color.new(color.black, 60))
