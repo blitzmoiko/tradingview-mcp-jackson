@@ -344,7 +344,7 @@ if barstate.islast
     table.cell(dash, 1, 3,  ema_bull ? "Bull" : "Bear", bgcolor=ema_bull ? g : r, text_color=w, text_size=size.small)
     table.cell(dash, 0, 4,  "VWAP Bias",  text_size=size.small, text_color=w)
     table.cell(dash, 1, 4,  above_vwap ? "Above" : "Below", bgcolor=above_vwap ? g : r, text_color=w, text_size=size.small)
-    table.cell(dash, 0, 5,  "150% VWAP",  text_size=size.small, text_color=w)
+    table.cell(dash, 0, 5,  "VWAP Exhaust", text_size=size.small, text_color=w)
     table.cell(dash, 1, 5,  vwap_exhaust_dn ? "ACTIVE" : "—", bgcolor=vwap_exhaust_dn ? ora : neu, text_color=w, text_size=size.small)
     table.cell(dash, 0, 6,  "Rel Volume", text_size=size.small, text_color=w)
     table.cell(dash, 1, 6,  str.tostring(math.round(rel_vol, 1)) + "x", bgcolor=high_vol ? g : r, text_color=w, text_size=size.small)
