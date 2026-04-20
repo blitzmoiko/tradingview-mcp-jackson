@@ -2,7 +2,7 @@
 
 If you found this from the YouTube video — welcome. This is the improved fork. Everything you need is below.
 
-Built on top of the original [tradingview-mcp](https://github.com/tradesdontlie/tradingview-mcp) by [@tradesdontlie](https://github.com/tradesdontlie). Full credit to them for the foundation. This fork adds a morning brief workflow, a rules config, and fixes the launch bug on TradingView Desktop v2.14+.
+Built on top of the original [tradingview-mpc](https://github.com/tradesdontlie/tradingview-mpc) by [@tradesdontlie](https://github.com/tradesdontlie). Full credit to them for the foundation. This fork adds a morning brief workflow, a rules config, and fixes the launch bug on TradingView Desktop v2.14+.
 
 > [!WARNING]
 > **Not affiliated with TradingView Inc. or Anthropic.** This tool connects to your locally running TradingView Desktop app via Chrome DevTools Protocol. Review the [Disclaimer](#disclaimer) before use.
@@ -20,7 +20,7 @@ Built on top of the original [tradingview-mcp](https://github.com/tradesdontlie/
 | Feature | What it does |
 |---------|-------------|
 | `morning_brief` | One command that scans your watchlist, reads all your indicators, and returns structured data for Claude to generate your session bias |
-| `session_save` / `session_get` | Saves your daily brief to `~/.tradingview-mcp/sessions/` so you can compare today vs yesterday |
+| `session_save` / `session_get` | Saves your daily brief to `~/.tradingview-mpc/sessions/` so you can compare today vs yesterday |
 | `rules.json` | Write your trading rules once — bias criteria, risk rules, watchlist. The morning brief applies them automatically every day |
 | Launch bug fix | Fixed `tv_launch` compatibility with TradingView Desktop v2.14+ |
 | `tv brief` CLI | Run your morning brief from the terminal in one word |
@@ -33,8 +33,8 @@ Paste this into Claude Code and it will handle everything:
 
 ```
 Set up TradingView MCP Jackson for me. 
-Clone https://github.com/LewisWJackson/tradingview-mcp-jackson.git to ~/tradingview-mcp-jackson, run npm install, then add it to my MCP config at ~/.claude/.mcp.json (merge with any existing servers, don't overwrite them). 
-The config block is: { "mcpServers": { "tradingview": { "command": "node", "args": ["/Users/YOUR_USERNAME/tradingview-mcp-jackson/src/server.js"] } } } — replace YOUR_USERNAME with my actual username.
+Clone https://github.com/LewisWJackson/tradingview-mpc-jackson.git to ~/tradingview-mpc-jackson, run npm install, then add it to my MCP config at ~/.claude/.mcp.json (merge with any existing servers, don't overwrite them). 
+The config block is: { "mcpServers": { "tradingview": { "command": "node", "args": ["/Users/YOUR_USERNAME/tradingview-mpc-jackson/src/server.js"] } } } — replace YOUR_USERNAME with my actual username.
 Then copy rules.example.json to rules.json and open it so I can fill in my trading rules.
 Finally restart and verify with tv_health_check.
 ```
@@ -57,8 +57,8 @@ Or follow the manual steps below.
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/LewisWJackson/tradingview-mcp-jackson.git ~/tradingview-mcp-jackson
-cd ~/tradingview-mcp-jackson
+git clone https://github.com/LewisWJackson/tradingview-mpc-jackson.git ~/tradingview-mpc-jackson
+cd ~/tradingview-mpc-jackson
 npm install
 ```
 
@@ -103,7 +103,7 @@ Add to `~/.claude/.mcp.json` (merge with any existing servers):
   "mcpServers": {
     "tradingview": {
       "command": "node",
-      "args": ["/Users/YOUR_USERNAME/tradingview-mcp-jackson/src/server.js"]
+      "args": ["/Users/YOUR_USERNAME/tradingview-mpc-jackson/src/server.js"]
     }
   }
 }
@@ -191,7 +191,7 @@ Claude reads `CLAUDE.md` automatically when working in this project. It contains
 | Tool | What it does |
 |------|-------------|
 | `morning_brief` | Scan watchlist, read indicators, return structured data for session bias. Reads `rules.json` automatically. |
-| `session_save` | Save the generated brief to `~/.tradingview-mcp/sessions/YYYY-MM-DD.json` |
+| `session_save` | Save the generated brief to `~/.tradingview-mpc/sessions/YYYY-MM-DD.json` |
 | `session_get` | Retrieve today's brief (or yesterday's if today not saved yet) |
 
 ### Chart Reading
@@ -317,7 +317,7 @@ Claude Code  ←→  MCP Server (stdio)  ←→  CDP (port 9222)  ←→  Tradin
 
 ## Credits
 
-This fork is built on [tradingview-mcp](https://github.com/tradesdontlie/tradingview-mcp) by [@tradesdontlie](https://github.com/tradesdontlie). The original tool is the foundation — go star their repo.
+This fork is built on [tradingview-mpc](https://github.com/tradesdontlie/tradingview-mpc) by [@tradesdontlie](https://github.com/tradesdontlie). The original tool is the foundation — go star their repo.
 
 ---
 
