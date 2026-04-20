@@ -1,6 +1,6 @@
 /**
- * Public API for tradingview-mcp core.
- * Usage: import { chart, data, pine } from 'tradingview-mcp/core'
+ * Public API for tradingview-mpc core.
+ * Usage: import { chart, data, pine } from 'tradingview-mpc/core'
  */
 export * as chart from './chart.js';
 export * as data from './data.js';

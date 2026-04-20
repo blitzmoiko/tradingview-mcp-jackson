@@ -1,5 +1,5 @@
 {
-  "name": "tradingview-mcp",
+  "name": "tradingview-mpc",
   "version": "1.0.0",
   "description": "MCP bridge for TradingView Desktop via Chrome DevTools Protocol",
   "type": "module",
