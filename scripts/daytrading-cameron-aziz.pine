@@ -46,6 +46,27 @@ mtf_bull_1h = ema9_1h > ema20_1h
 mtf_bull_4h = ema9_4h > ema20_4h
 mtf_bull_1d = ema9_1d > ema20_1d
 
+// ─── 1H DASHBOARD VALUES ──────────────────────────────────────────────────────
+close_1h  = request.security(syminfo.tickerid, "60", close, lookahead=barmerge.lookahead_off)
+high_1h   = request.security(syminfo.tickerid, "60", high, lookahead=barmerge.lookahead_off)
+low_1h    = request.security(syminfo.tickerid, "60", low,  lookahead=barmerge.lookahead_off)
+volume_1h = request.security(syminfo.tickerid, "60", volume, lookahead=barmerge.lookahead_off)
+vwap_1h   = request.security(syminfo.tickerid, "60", ta.vwap(hlc3), lookahead=barmerge.lookahead_off)
+rsi_1h    = request.security(syminfo.tickerid, "60", ta.rsi(close, rsi_len), lookahead=barmerge.lookahead_off)
+[bb_upper_1h, bb_mid_1h, bb_lower_1h] = request.security(syminfo.tickerid, "60", ta.bb(close, bb_len, bb_mult), lookahead=barmerge.lookahead_off)
+[macd_line_1h, signal_line_1h, macd_hist_1h] = request.security(syminfo.tickerid, "60", ta.macd(close, 12, 26, 9), lookahead=barmerge.lookahead_off)
+avg_vol_1h = request.security(syminfo.tickerid, "60", ta.sma(volume, vol_len), lookahead=barmerge.lookahead_off)
+
+session_1h = not na(time("60", auto_session, "America/New_York"))
+
+// 1H-based calculations
+above_vwap_1h   = close_1h > vwap_1h
+below_vwap_1h   = close_1h < vwap_1h
+macd_bull_1h    = macd_line_1h > signal_line_1h
+rel_vol_1h      = volume_1h / avg_vol_1h
+high_vol_1h     = rel_vol_1h >= 1.5
+vwap_exhaust_dn_1h = (high_1h - low_1h) / vwap_1h >= 0.015 and close_1h < vwap_1h and session_1h
+
 // ─── MTF OHLC — CONFIRMED CLOSED BARS ────────────────────────────────────────
 [o1h_1,h1h_1,l1h_1,c1h_1] = request.security(syminfo.tickerid,"60", [open[1],high[1],low[1],close[1]], lookahead=barmerge.lookahead_off)
 [o1h_2,h1h_2,l1h_2,c1h_2] = request.security(syminfo.tickerid,"60", [open[2],high[2],low[2],close[2]], lookahead=barmerge.lookahead_off)
@@ -339,19 +360,19 @@ if barstate.islast
     table.cell(dash, 0, 1,  "Type",       text_size=size.small, text_color=w)
     table.cell(dash, 1, 1,  type_label,   bgcolor=neu, text_color=w, text_size=size.small)
     table.cell(dash, 0, 2,  "Session",    text_size=size.small, text_color=w)
-    table.cell(dash, 1, 2,  session_active ? "OPEN" : "CLOSED", bgcolor=session_active ? g : neu, text_color=w, text_size=size.small)
+    table.cell(dash, 1, 2,  session_1h ? "OPEN" : "CLOSED", bgcolor=session_1h ? g : neu, text_color=w, text_size=size.small)
     table.cell(dash, 0, 3,  "EMA 9/20",   text_size=size.small, text_color=w)
-    table.cell(dash, 1, 3,  ema_bull ? "Bull" : "Bear", bgcolor=ema_bull ? g : r, text_color=w, text_size=size.small)
+    table.cell(dash, 1, 3,  mtf_bull_1h ? "Bull" : "Bear", bgcolor=mtf_bull_1h ? g : r, text_color=w, text_size=size.small)
     table.cell(dash, 0, 4,  "VWAP Bias",  text_size=size.small, text_color=w)
-    table.cell(dash, 1, 4,  above_vwap ? "Above" : "Below", bgcolor=above_vwap ? g : r, text_color=w, text_size=size.small)
+    table.cell(dash, 1, 4,  above_vwap_1h ? "Above" : "Below", bgcolor=above_vwap_1h ? g : r, text_color=w, text_size=size.small)
     table.cell(dash, 0, 5,  "VWAP Exhaust", text_size=size.small, text_color=w)
-    table.cell(dash, 1, 5,  vwap_exhaust_dn ? "ACTIVE" : "—", bgcolor=vwap_exhaust_dn ? ora : neu, text_color=w, text_size=size.small)
+    table.cell(dash, 1, 5,  vwap_exhaust_dn_1h ? "ACTIVE" : "—", bgcolor=vwap_exhaust_dn_1h ? ora : neu, text_color=w, text_size=size.small)
     table.cell(dash, 0, 6,  "Rel Volume", text_size=size.small, text_color=w)
-    table.cell(dash, 1, 6,  str.tostring(math.round(rel_vol, 1)) + "x", bgcolor=high_vol ? g : r, text_color=w, text_size=size.small)
+    table.cell(dash, 1, 6,  str.tostring(math.round(rel_vol_1h, 1)) + "x", bgcolor=high_vol_1h ? g : r, text_color=w, text_size=size.small)
     table.cell(dash, 0, 7,  "RSI",        text_size=size.small, text_color=w)
-    table.cell(dash, 1, 7,  str.tostring(math.round(rsi, 1)), bgcolor=rsi >= 85 ? r : rsi <= 15 ? g : neu, text_color=w, text_size=size.small)
+    table.cell(dash, 1, 7,  str.tostring(math.round(rsi_1h, 1)), bgcolor=rsi_1h >= 85 ? r : rsi_1h <= 15 ? g : neu, text_color=w, text_size=size.small)
     table.cell(dash, 0, 8,  "MACD",       text_size=size.small, text_color=w)
-    table.cell(dash, 1, 8,  macd_bull ? "Bull" : "Bear", bgcolor=macd_bull ? g : r, text_color=w, text_size=size.small)
+    table.cell(dash, 1, 8,  macd_bull_1h ? "Bull" : "Bear", bgcolor=macd_bull_1h ? g : r, text_color=w, text_size=size.small)
     table.cell(dash, 0, 9,  "OR High",    text_size=size.small, text_color=w)
     table.cell(dash, 1, 9,  na(or_high) ? "--" : str.tostring(math.round(or_high, 2)), bgcolor=neu, text_color=w, text_size=size.small)
     table.cell(dash, 0, 10, "OR Low",     text_size=size.small, text_color=w)
